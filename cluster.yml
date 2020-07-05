@@ -1,0 +1,87 @@
+---
+
+# - hosts: all
+#   become: True
+#   tasks:
+#     - debug: var=hostvars[inventory_hostname]
+
+- hosts: all
+  become_user: root
+  tasks:
+
+  - name: Install pip packages
+    apt: 
+      state: latest
+      name: "{{item}}"
+    with_items:
+      - python-pip
+      - bridge-utils
+
+  - pip:
+      name: proxmoxer
+
+# - hosts: all
+#   become: True
+#   tasks:
+#     - name: Print all interface ipv4 data
+#       when: hostvars[ansible_fqdn]['ansible_'~item]['ipv4'] is defined
+#       debug:
+#         msg: "{{ hostvars[ansible_fqdn]['ansible_'~item]['ipv4'] | pprint }}"
+#       with_items:
+#         - "{{ ansible_interfaces }}"
+#   tags: nettest
+
+# - hosts: all
+#   become: True
+#   serial: 1
+#   tasks:
+#     - name: Configure /etc/network/interfaces
+#       template:
+#         src: "{{ interfaces_template }}"
+#         dest: /etc/network/interfaces.test
+#         backup: yes
+#       register: __configure_interfaces
+
+#     - block:
+#       - name: Reboot for networking changes
+#         shell: "sleep 5 && shutdown -r now 'Networking changes found, rebooting'"
+#         async: 1
+#         poll: 0
+
+#       - name: Wait for server to come back online
+#         wait_for_connection:
+#           delay: 15
+#       when: __configure_interfaces is changed
+
+
+- hosts: all
+  become: True
+  roles:
+     - lae.proxmox
+  vars:
+     # pve_group: lab01 # {{ pve_group }} in group_var
+     pve_cluster_enabled: yes
+     pve_reboot_on_kernel_update: true,
+     pve_watchdog: false
+     pve_repository_line: "deb http://download.proxmox.com/debian/pve stretch pve-no-subscription"
+     pve_remove_subscription_warning: true
+
+- hosts: all
+  become: True
+  tasks:
+  - name: Check if apparmor is present
+    stat:
+      path: /etc/apparmor.d/lxc/lxc-default-cgns
+    register: apparmor_presence
+  - name: Add NFS support for lxc in node
+    lineinfile:
+      path: /etc/apparmor.d/lxc/lxc-default-cgns
+      regexp: '^mount fstype=cgroup'
+      insertbefore: '^\}'
+      line: '  mount fstype=nfs,'
+    when: apparmor_presence.stat.exists == True
+  - name: Reload apparmor
+    service:
+      name: apparmor
+      state: reloaded
+    tags: nfs

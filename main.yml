@@ -1,0 +1,30 @@
+
+- name: Common settings
+  import_playbook: /etc/ansible/playbooks/root.yml
+
+
+- name: ntp & resolv configuration to all nodes
+  hosts: all
+  become: true
+  become_user: root
+  vars:
+    resolv_nameservers:
+      - 172.16.0.53 # Internal
+      - 172.16.0.68 # Internal
+    resolv_domain: k9.lan
+    resolv_search:
+      - k9.lan
+    ntp_manage_config: true
+    ntp_timezone: "Etc/UTC"
+
+    resolv_options:
+      - timeout:2
+      # - rotate
+  roles:
+    - ahuffman.resolv
+    - geerlingguy.ntp
+  tags:
+    - setup
+
+- name: Cluster settings
+  import_playbook: cluster.yml

@@ -1,0 +1,6 @@
+{
+	"url": "https://k9-lab-01.k9.lan:8006/",
+	"username": "apiread@pve",
+	"password": "apiread",
+    "validateCert": false
+}

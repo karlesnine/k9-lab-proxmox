@@ -1,0 +1,67 @@
+# Create new container with minimal options
+- hosts: all
+  become: True
+  tasks:
+
+  - name: Include vars of lxc.inventory.ini into the 'lxc_dict' dict variable (2.2).
+    include_vars:
+      file: ./inventory/lxc.inventory.ini
+      name: lxc_dict
+    tags: create, start, stop, remove
+
+  - debug:
+      msg: "Container : {{ item.key }} is {{ item.value.vmid }}"
+    with_dict: "{{ lxc_dict }}"
+  - name: Create containers
+    proxmox:
+      timeout: 60
+      vmid: "{{ item.value.vmid }}"
+      node: "{{ item.value.node }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox_api_password }}"
+      api_host: "{{ proxmox_api_host }}"
+      password: "{{ proxmox_guest_password }}"
+      hostname: "{{ item.key }}"
+      pubkey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDWdB+DvbCaapEbCthj02Qk5+li5kTkyXKX4m516pyC8fFvan1RpKejHabWcKpriqlELY+bycd4jNO+kIVc9HS1XYQ92CYEHo0rRjKq0RQzdT+ButGvuZVxdmSzeTor8h1tX9j9XAxE8D66gij0S384A3IGXoUs/v6LwSes6W9czKxYMj5lyC379rhdn2b5HRNk8OZTmKBNwQ1zo40fyPFs4TEKJfg0ABk4l/j7Kr1e1/T8/No8O2QM9irjQvF2CkTcGhiI4/bt87d3vk2MZ1pNS787Pc6fJIv7XD9G+u/u91GADd4Xi2IQ+L4rlbTfrDIsOLt+eb91w859w1Jfd2w9 charles-christian.cr@vestiairecollective.com
+      ostemplate: 'local:vztmpl/{{ proxmox_guest_lxc_template }}'
+      netif: '{"net0":"name=eth0,gw={{ proxmox_guest_gw }},ip={{ item.value.eth0 }},bridge=vmbr0"}'
+      cores: "{{ item.value.cores }}"
+      swap: "{{ item.value.swap }}"
+      disk: "{{ item.value.disk }}" #GB
+      memory: "{{ item.value.memory }}" #MB
+      storage: local
+    with_dict: "{{ lxc_dict }}"
+    tags: create
+
+  - name: Start containers 
+    proxmox:
+      timeout: 60
+      vmid: "{{ item.value.vmid }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox_api_password }}"
+      api_host: "{{ proxmox_api_host }}"
+      state: started
+    with_dict: "{{ lxc_dict }}"
+    tags: start
+
+  - name: Stop containers
+    proxmox:
+      timeout: 60
+      vmid: "{{ item.value.vmid }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox_api_password }}"
+      api_host: "{{ proxmox_api_host }}"
+      state: stopped
+    with_dict: "{{ lxc_dict }}"
+    tags: stop
+
+  - name: Remove containers
+    proxmox:
+      timeout: 60
+      vmid: "{{ item.value.vmid }}"
+      api_user: "{{ proxmox_api_user }}"
+      api_password: "{{ proxmox_api_password }}"
+      api_host: "{{ proxmox_api_host }}"
+      state: absent
+    with_dict: "{{ lxc_dict }}"
+    tags: remove

@@ -1,0 +1,31 @@
+
+- hosts: all
+  become: True
+  tasks:
+
+  - name: Update apt cache
+    apt: 
+      cache_valid_time: 25200 # 7h
+  - name: Install nfs packages
+    apt: 
+      state: latest
+      name: "{{item}}"
+    with_items:
+      - nfs-common
+
+  - name: create /mnt/nfs directory
+    file:
+      path: /mnt/nfs
+      state: directory
+      owner: root
+      group: root
+      mode: 0777
+      recurse: no
+
+  - name: Mount nfs
+    mount:
+      path: /mnt/nfs
+      src: 10.65.0.110:/mnt/md127/backupvm/proxmoxtest
+      fstype: nfs
+      opts: rw
+      state: mounted

@@ -1,0 +1,8 @@
+---
+pve_group: lab01
+pve_fetch_directory: "fetch/{{ pve_group }}/"
+pve_watchdog: false
+# pve_ssl_private_key: "{{ lookup('file', pve_group + '/' + inventory_hostname + '.key') }}"
+# pve_ssl_certificate: "{{ lookup('file', pve_group + '/' + inventory_hostname + '.pem') }}"
+pve_cluster_enabled: yes
+interfaces_template: "interfaces-{{ pve_group }}.j2"

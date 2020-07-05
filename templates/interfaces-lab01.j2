@@ -1,0 +1,17 @@
+# {{ ansible_managed }}
+auto lo
+iface lo inet loopback
+
+allow-hotplug {{ ansible_default_ipv4.interface }}
+iface {{ ansible_default_ipv4.interface }} inet manual
+
+auto vmbr0
+iface vmbr0 inet static
+    address {{ lookup('dig', ansible_fqdn) }}
+    gateway 172.16.0.1
+    netmask 255.255.252.0
+    dns-nameservers 172.16.0.53 172.16.0.56
+    dns-search local
+    bridge_ports {{ ansible_default_ipv4.interface }}
+    bridge_stp off
+    bridge_fd 0
